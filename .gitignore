@@ -1,0 +1,33 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated benchmark command files and logs
+execcommands.tsv
+execcommands_copy.tsv
+logs/
+*.out
+*.err
+
+# Generated simulation and analysis outputs
+temp_runanalysis/
+simulations/
+clustering_benchmark_*/
+assembler_benchmark_*/
+*.nwk
+*_iso_*.fasta
+*_iso_*.gff
+*_for_clustering.fasta
+*_for_clustering_aa.fasta
+*_truth_matrix.tsv
+*_presence_absence.csv
+*_prokka_DB.fasta
+*_fasta_file.tsv
+*_gff_file.tsv
+*.png
+*.pdf
+*.svg
