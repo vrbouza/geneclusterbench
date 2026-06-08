@@ -68,5 +68,3 @@ uv run python -m geneclusterbench.submit_gene_clustering --softwaredir /path/to/
 - `src/geneclusterbench/submit_gene_clustering.py`: Slurm launcher for CD-HIT and MMseqs2 gene-clustering benchmarks over nucleotide and amino-acid clustering FASTAs.
 - `src/geneclusterbench/analyse_gene_clustering.py`: parses CD-HIT and MMseqs2 outputs, compares clusters to simulator truth labels, computes clustering metrics, and plots results.
 - `docs/simulation_to_analysis_workflow.md`: end-to-end workflow notes for starting from one genome, creating simulations, processing them on Slurm, and analysing outputs.
-
-The unfinished exploratory `create_gffs_of_simulations.py` script is intentionally not included in this packaged workflow.
