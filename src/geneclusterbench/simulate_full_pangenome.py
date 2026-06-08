@@ -91,6 +91,10 @@ def clean_gff_string(gff_string):
     return cleaned_gff
 
 
+def reverse_complement_text(seq):
+    return str(Seq(str(seq)).reverse_complement())
+
+
 def simulate_img_with_mutation(in_tree,
                                gain_rate,
                                loss_rate,
@@ -443,16 +447,20 @@ def add_diversity(gfffile, nisolates, effective_pop_size, gain_rate, loss_rate,
                     # To do this checks, remember start codon and stop codons can change. The NT sequence is, for each gene, fixed to one of the random ones. Thus, it is always the same, ignoring potential variations due to synonymous mutations.
                     #### TODO: incorporate NT variations due to this
 
+                    gene_id = iG.id.split("-")[1]
+                    contig_gene_seq = record_list[-1].seq[iG.start - 1 : iG.stop]
+                    expected_gene_seq = gene_seq_dict[gene_id]
                     if iG.strand == "+":
                         # if record_list[-1].seq[iG.start - 1 : iG.stop] != gene_seq_dict[iG.id.split(" ")[1]]:
                         # if record_list[-1].seq[iG.start - 1 : iG.stop - 3] != gene_seq_dict[iG.id.split(" ")[1]][:-3]:
-                        if record_list[-1].seq[iG.start - 1 + 2: iG.stop - 3] != gene_seq_dict[iG.id.split("-")[1]][2:-3]:
-                            print(f"=====================\n> Orig gene & mutated gene ids: {iG.id}. iG.start: {iG.start}, iG.stop: {iG.stop}.\nSeq from the contig:\n" + record_list[-1].seq[iG.start - 1 : iG.stop] + f"\n>    Seq from the gene in strand {iG.strand}:\n" + gene_seq_dict[iG.id.split("-")[1]])
+                        if contig_gene_seq[2:-3] != expected_gene_seq[2:-3]:
+                            print(f"=====================\n> Orig gene & mutated gene ids: {iG.id}. iG.start: {iG.start}, iG.stop: {iG.stop}.\nSeq from the contig:\n" + contig_gene_seq + f"\n>    Seq from the gene in strand {iG.strand}:\n" + expected_gene_seq)
                     else:
                         # if "".join(["A" if el == "T" else "T" if el == "A" else "G" if el == "C" else "C" for el in record_list[-1].seq[iG.start - 1 : iG.stop][::-1] ]) != gene_seq_dict[iG.id.split(" ")[1]]:
                         # if "".join(["A" if el == "T" else "T" if el == "A" else "G" if el == "C" else "C" for el in record_list[-1].seq[iG.start - 1 : iG.stop][::-1] ])[:-3] != gene_seq_dict[iG.id.split(" ")[1]][:-3]:
-                        if "".join(["A" if el == "T" else "T" if el == "A" else "G" if el == "C" else "C" for el in record_list[-1].seq[iG.start - 1 : iG.stop][::-1] ])[2:-3] != gene_seq_dict[iG.id.split("-")[1]][2:-3]:
-                            print(f"=====================\n> Orig gene & mutated gene ids: {iG.id}. iG.start: {iG.start}, iG.stop: {iG.stop}.\nSeq from the contig:\n" + record_list[-1].seq[iG.start - 1 : iG.stop] + f"\n>    Seq from the gene in strand {iG.strand}:\n" + gene_seq_dict[iG.id.split("-")[1]] + f"\n> Seq. reversed-complement:\n" + "".join(["A" if el == "T" else "T" if el == "A" else "G" if el == "C" else "C" for el in record_list[-1].seq[iG.start - 1 : iG.stop][::-1] ]))
+                        contig_gene_rc = reverse_complement_text(contig_gene_seq)
+                        if contig_gene_rc[2:-3] != expected_gene_seq[2:-3]:
+                            print(f"=====================\n> Orig gene & mutated gene ids: {iG.id}. iG.start: {iG.start}, iG.stop: {iG.stop}.\nSeq from the contig:\n" + contig_gene_seq + f"\n>    Seq from the gene in strand {iG.strand}:\n" + expected_gene_seq + f"\n> Seq. reversed-complement:\n" + contig_gene_rc)
 
                     record_list[-1].features.append(feature)
 
