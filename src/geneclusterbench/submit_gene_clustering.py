@@ -39,6 +39,7 @@ EXEC_SCAFFOLD = "python3 {executable} {filepath}"
 CRANGE = [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95]
 DEFAULT_PARAMS = {"c": 0.9}
 COMMANDS_FILE = "execcommands.tsv"
+CDHIT_EST_MIN_C = 0.8
 
 
 def load_seeds(seedsfile):
@@ -72,6 +73,12 @@ def get_cdhit_word_size(c, seqtype):
             return 5
         return 4
     raise RuntimeError("Not supported sequence type " + seqtype)
+
+
+def get_c_values_for_process(proc, seqtype):
+    if proc == "cdhit" and seqtype == "nt":
+        return [c for c in CRANGE if c >= CDHIT_EST_MIN_C]
+    return CRANGE
 
 
 def get_command_for_process(proc, seqtype, infile, outfolder, nthreads, maxmem, softwaredir, c=0.9):
@@ -153,7 +160,7 @@ def submit_clustering_jobs(args):
                 infile = get_clustering_fasta(simdir, seqtype)
 
                 for process in args.process:
-                    for c_value in CRANGE:
+                    for c_value in get_c_values_for_process(process, seqtype):
                         suffix = f"_st-{seqtype}" + (
                             f"_c-{c_value}" if c_value != DEFAULT_PARAMS["c"] else ""
                         )

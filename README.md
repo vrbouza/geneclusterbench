@@ -47,7 +47,7 @@ The Python environment includes the simulation and analysis dependencies, but th
 
 Before running this from a cloned or copied checkout, update the local hardcoded paths for your filesystem and cluster environment.
 
-The benchmark sweeps `c` as sequence identity. CD-HIT receives this as `-c`, with `-n` chosen from the sequence type and threshold. MMseqs2 receives it as `--min-seq-id`; MMseqs2 coverage is left at its default.
+The benchmark sweeps `c` as sequence identity. CD-HIT receives this as `-c`, with `-n` chosen from the sequence type and threshold; nucleotide CD-HIT uses `cd-hit-est`, so thresholds below `0.8` are skipped. MMseqs2 receives it as `--min-seq-id`; MMseqs2 coverage is left at its default.
 
 The default software directory is:
 

@@ -116,7 +116,7 @@ cdhitexec = os.path.join(
 )
 ```
 
-The `c` values are identity thresholds. CD-HIT uses `-c` and a sequence-type-specific `-n`; MMseqs2 uses `--min-seq-id`.
+The `c` values are identity thresholds. CD-HIT uses `-c` and a sequence-type-specific `-n`; nucleotide CD-HIT uses `cd-hit-est`, so thresholds below `0.8` are skipped. MMseqs2 uses `--min-seq-id`.
 
 The launcher writes `execcommands.tsv` in the current working directory and submits it as a Slurm array through the benchmark runner.
 
