@@ -87,6 +87,8 @@ def get_param_dict_from_splits(thesplits):
     outdict = {}
     for split in thesplits:
         subsplits = split.split("-")
+        if len(subsplits) != 2:
+            raise ValueError(f"Malformed parameter token {split!r}; expected key-value")
         if subsplits[1].replace(".", "").isdigit():
             outdict[subsplits[0]] = float(subsplits[1])
         else:
@@ -261,22 +263,40 @@ def get_info_from_folder(theargs):
         nameofass = str(theass)
 
     listoflists = []
-    for folder_name in os.listdir(os.path.join(thedir, str(theass), str(theseed))):
+    seed_result_dir = os.path.join(thedir, str(theass), str(theseed))
+    for folder_name in os.listdir(seed_result_dir):
+        folderpath = os.path.join(seed_result_dir, folder_name)
+        if not os.path.isdir(folderpath):
+            continue
+
         splits = folder_name.split("_")
         tmpclusterer = splits[0]
-        paramdict = get_param_dict_from_splits(splits[1:]) if len(splits) > 1 else {}
+        if tmpclusterer not in CLUSTERERS:
+            warnings.warn(
+                f"Skipping non-clusterer folder {folderpath}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            continue
 
-        for key in paramdict:
-            if key not in DEFAULT_PARAMS:
-                raise RuntimeError(
-                    "Parameter "
-                    + str(key)
-                    + " from folder "
-                    + os.path.join(thedir, folder_name)
-                    + " is not contemplated."
-                )
+        try:
+            paramdict = get_param_dict_from_splits(splits[1:]) if len(splits) > 1 else {}
+        except ValueError as exc:
+            warnings.warn(
+                f"Skipping malformed result folder {folderpath}: {exc}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            continue
 
-        folderpath = os.path.join(thedir, str(theass), str(theseed), folder_name)
+        invalid_params = [key for key in paramdict if key not in DEFAULT_PARAMS]
+        if invalid_params:
+            warnings.warn(
+                f"Skipping result folder {folderpath}; unsupported parameters {invalid_params}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            continue
         if not check_status_of_folder(tmpclusterer, folderpath):
             continue
 
