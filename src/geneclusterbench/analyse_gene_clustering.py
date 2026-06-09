@@ -224,13 +224,23 @@ def check_status_of_folder(clusterer, path):
     return False
 
 
+def get_truth_matrix_path(datapath, assembly, seed):
+    truth_seed_dir = os.path.join(datapath, "simulations", str(assembly), str(seed))
+    matches = [
+        os.path.join(truth_seed_dir, el)
+        for el in os.listdir(truth_seed_dir)
+        if "truth_matrix" in el
+    ]
+    if len(matches) != 1:
+        raise RuntimeError(
+            f"Expected one truth matrix in {truth_seed_dir}, found {len(matches)}"
+        )
+    return matches[0]
+
+
 def get_info_from_folder(theargs):
     thedir, theass, theseed, datapath = theargs
-    truthpath = [
-        os.path.join(datapath, "simulations", str(theass), str(theseed), el)
-        for el in os.listdir(os.path.join(datapath, "simulations", str(theass), str(theseed)))
-        if "truth_matrix" in el
-    ][0]
+    truthpath = get_truth_matrix_path(datapath, theass, theseed)
     truthmatrix = pd.read_csv(truthpath, sep="\t")
     truthmatrix = truthmatrix.set_index("gene_id")
     truthlabels = list(truthmatrix["original_gene"])
@@ -280,6 +290,12 @@ def get_info_from_folder(theargs):
             + paramlist
             + [runtime]
         )
+    if not listoflists:
+        warnings.warn(
+            f"No valid clustering outputs found for {theass}/{theseed}; skipping",
+            RuntimeWarning,
+            stacklevel=2,
+        )
     return (listoflists, theass, nameofass)
 
 
@@ -292,6 +308,14 @@ def plotter(theargs):
         & (datadf.index.get_level_values("simulations") == (datatype == "simulations"))
     ]
 
+    if subdf.empty:
+        warnings.warn(
+            f"No rows available for {assembly}/{datatype}/{name}; skipping plot",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return
+
     fig = plt.figure(1, dpi=150)
     ax = fig.subplots()
     xs = list(set(list(subdf["c"].astype(float))))
@@ -303,6 +327,7 @@ def plotter(theargs):
         ynams = [el + "/" + seqtype for el in clusterers if el in availcl]
         ymean = np.zeros((len(ynams), len(xs)))
         ystd = np.zeros((len(ynams), len(xs)))
+        ycount = np.zeros((len(ynams), len(xs)), dtype=int)
 
         for cluster_index, ynam in enumerate(ynams):
             for x_index, x_value in enumerate(xs):
@@ -314,18 +339,24 @@ def plotter(theargs):
                     & (subdf["c"] == x_value)
                 ][name].astype(float)
                 ymean[cluster_index, x_index] = tmpdf.mean()
-                ystd[cluster_index, x_index] = tmpdf.std()
+                ycount[cluster_index, x_index] = tmpdf.count()
+                ystd[cluster_index, x_index] = tmpdf.std() if tmpdf.count() >= 2 else 0.0
 
         for y_index, ynam in enumerate(ynams):
             ax.plot(xs, ymean[y_index, :], "-", c=CONFIGDICT_COLOURS[ynam], label=FANCYDICT[ynam])
-            ax.fill_between(
-                xs,
-                [max(ymean[y_index, j] - ystd[y_index, j], 0.0) for j in range(len(ymean[y_index, :]))],
-                ymean[y_index, :] + ystd[y_index, :],
-                alpha=0.5,
-                edgecolor=CONFIGDICT_COLOURS[ynam],
-                facecolor=CONFIGDICT_COLOURS[ynam],
-            )
+            if np.any(ycount[y_index, :] >= 2):
+                ax.fill_between(
+                    xs,
+                    [
+                        max(ymean[y_index, j] - ystd[y_index, j], 0.0)
+                        for j in range(len(ymean[y_index, :]))
+                    ],
+                    ymean[y_index, :] + ystd[y_index, :],
+                    where=ycount[y_index, :] >= 2,
+                    alpha=0.5,
+                    edgecolor=CONFIGDICT_COLOURS[ynam],
+                    facecolor=CONFIGDICT_COLOURS[ynam],
+                )
 
     if name in CONFIGDICT and "ylimits_c" in CONFIGDICT[name]:
         ax.set_ylim(CONFIGDICT[name]["ylimits_c"][0], CONFIGDICT[name]["ylimits_c"][1])
@@ -380,15 +411,32 @@ def plotter_pointplots(theargs):
         & (datadf.index.get_level_values("simulations") == (datatype == "simulations"))
         & (datadf["c"] == DEFAULT_PARAMS["c"])
     ]
+    if subdf.empty:
+        warnings.warn(
+            f"No rows available for {assembly}/{datatype}/{name}; skipping point plot",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return
+
     clusterers = list(set(list(subdf.index.get_level_values("clusterer"))))
     x = []
     for clusterer, seqtype in [(c, st) for st in SEQTYPES for c in clusterers]:
         if len(list(subdf[(subdf.index.get_level_values("clusterer") == clusterer) & (subdf["st"] == seqtype)][name])):
             x.append(clusterer + "/" + seqtype)
 
+    if not x:
+        warnings.warn(
+            f"No clusterer/sequence-type rows available for {assembly}/{datatype}/{name}; skipping point plot",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return
+
     x_fancy = [FANCYDICT[value] for value in x]
     ymean = []
     ystd = []
+    ycount = []
     for x_value in x:
         tmpdf = subdf[
             (subdf.index.get_level_values("simulations") == True)
@@ -397,19 +445,28 @@ def plotter_pointplots(theargs):
             & (subdf["st"] == x_value.split("/")[1])
         ][name].astype(float)
         ymean.append(tmpdf.mean())
-        ystd.append(tmpdf.std())
+        ycount.append(tmpdf.count())
+        ystd.append(tmpdf.std() if tmpdf.count() >= 2 else 0.0)
 
     fig = plt.figure(1, dpi=150)
     ax = fig.subplots()
     for index in range(len(x)):
-        ax.errorbar(
-            x_fancy[index],
-            ymean[index],
-            c=CONFIGDICT_COLOURS[x[index]],
-            yerr=[[ystd[index] if ymean[index] > ystd[index] else ymean[index]], [ystd[index]]],
-            capsize=4.0,
-            fmt="o",
-        )
+        if ycount[index] >= 2:
+            ax.errorbar(
+                x_fancy[index],
+                ymean[index],
+                c=CONFIGDICT_COLOURS[x[index]],
+                yerr=[[ystd[index] if ymean[index] > ystd[index] else ymean[index]], [ystd[index]]],
+                capsize=4.0,
+                fmt="o",
+            )
+        else:
+            ax.plot(
+                x_fancy[index],
+                ymean[index],
+                "o",
+                c=CONFIGDICT_COLOURS[x[index]],
+            )
 
     if name in CONFIGDICT and "ylimits" in CONFIGDICT[name]:
         ax.set_ylim(CONFIGDICT[name]["ylimits"][0], CONFIGDICT[name]["ylimits"][1])
@@ -484,6 +541,44 @@ def build_results_dataframe(listoflists):
     return outdf.set_index(index)
 
 
+def discover_analysis_tasks(runfolder, datapath, seeds):
+    simulations_run_dir = os.path.join(runfolder, "simulations")
+    tasks = []
+    missing = []
+
+    for assembly in next(os.walk(simulations_run_dir))[1]:
+        for seed in seeds:
+            result_seed_dir = os.path.join(simulations_run_dir, assembly, str(seed))
+            truth_seed_dir = os.path.join(datapath, "simulations", assembly, str(seed))
+
+            if not os.path.isdir(result_seed_dir) or not os.path.isdir(truth_seed_dir):
+                missing.append((assembly, seed, result_seed_dir, truth_seed_dir))
+                continue
+
+            tasks.append((simulations_run_dir, assembly, seed, datapath))
+
+    return tasks, missing
+
+
+def report_missing_tasks(missingtasks, gettinginfotasks):
+    if not missingtasks:
+        return
+
+    warnings.warn(
+        f"{len(missingtasks)} expected simulations are missing; "
+        f"analysing {len(gettinginfotasks)} present simulations",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    print("> Missing expected simulations:")
+    for assembly, seed, result_seed_dir, truth_seed_dir in missingtasks:
+        print(f"\t- {assembly}/{seed}")
+        if not os.path.isdir(result_seed_dir):
+            print(f"\t  missing result folder: {result_seed_dir}")
+        if not os.path.isdir(truth_seed_dir):
+            print(f"\t  missing truth folder: {truth_seed_dir}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Analyse gene clustering benchmark runs.")
     parser.add_argument("runfolder", default="./")
@@ -503,18 +598,23 @@ def main():
     lsdirs = next(os.walk(args.runfolder))[1]
     if "simulations" not in lsdirs:
         raise RuntimeError("No valid folders found!")
-    simassemblies = next(os.walk(os.path.join(args.runfolder, "simulations")))[1]
-
     print("> Getting seeds")
     seeds = load_seeds(seedsfile)
     print("> Got {} seeds".format(len(seeds)))
 
     print("\n> Getting info...")
-    gettinginfotasks = [
-        (os.path.join(args.runfolder, "simulations"), assembly, seed, args.datapath)
-        for assembly in simassemblies
-        for seed in seeds
-    ]
+    gettinginfotasks, missingtasks = discover_analysis_tasks(
+        args.runfolder,
+        args.datapath,
+        seeds,
+    )
+    report_missing_tasks(missingtasks, gettinginfotasks)
+    if not gettinginfotasks:
+        expected_dir = os.path.join(args.runfolder, "simulations")
+        raise RuntimeError(
+            "No analysable simulations found; expected result folders under "
+            f"{expected_dir}/<assembly>/<seed>"
+        )
 
     listoflists = []
     namedict = {}
@@ -531,6 +631,9 @@ def main():
         pool.close()
         pool.join()
     print("\n> Done!")
+
+    if not listoflists:
+        raise RuntimeError("No valid clustering results were produced from the analysable simulations")
 
     outdf = build_results_dataframe(listoflists)
     assemblies = set(list(outdf.index.get_level_values("assembly")))
