@@ -106,6 +106,29 @@ def get_command_for_process(proc, seqtype, infile, outfolder, nthreads, maxmem, 
     raise RuntimeError("Process " + proc + " not supported")
 
 
+def get_clustering_fasta(simdir, seqtype):
+    if seqtype == "nt":
+        expected = "*_for_clustering.fasta"
+        matches = [
+            el for el in os.listdir(simdir)
+            if el.endswith("_for_clustering.fasta")
+        ]
+    elif seqtype == "aa":
+        expected = "*_for_clustering_aa.fasta"
+        matches = [
+            el for el in os.listdir(simdir)
+            if el.endswith("_for_clustering_aa.fasta")
+        ]
+    else:
+        raise RuntimeError("Not supported sequence type " + seqtype)
+
+    if len(matches) != 1:
+        raise RuntimeError(
+            f"Expected one {expected} in {simdir}, found {len(matches)}"
+        )
+    return os.path.join(simdir, matches[0])
+
+
 def submit_clustering_jobs(args):
     print("> Getting seeds")
     seeds = load_seeds(args.seeds)
@@ -116,22 +139,18 @@ def submit_clustering_jobs(args):
     timestamp = int(time.time()) if args.preset_timestamp < 0 else args.preset_timestamp
     generaloutdir = os.path.join(args.temp_outdir, f"clustering_benchmark_{timestamp}")
 
-    assemblies = os.listdir(os.path.join(args.datapath, "simulations"))
+    simulations_dir = os.path.join(args.datapath, "simulations")
+    assemblies = [
+        el for el in os.listdir(simulations_dir)
+        if os.path.isdir(os.path.join(simulations_dir, el))
+    ]
     for assembly in assemblies:
         for seed in seeds:
-            simdir = os.path.join(args.datapath, "simulations", assembly, str(seed))
-            inputfiles = [el for el in os.listdir(simdir) if "for_clustering" in el]
+            simdir = os.path.join(simulations_dir, assembly, str(seed))
+            if not os.path.isdir(simdir):
+                continue
             for seqtype in args.sequence_type:
-                if seqtype == "nt":
-                    infile = os.path.join(
-                        simdir, [el for el in inputfiles if "clustering.fasta" in el][0]
-                    )
-                elif seqtype == "aa":
-                    infile = os.path.join(
-                        simdir, [el for el in inputfiles if "clustering_aa.fasta" in el][0]
-                    )
-                else:
-                    raise RuntimeError("Not supported sequence type " + seqtype)
+                infile = get_clustering_fasta(simdir, seqtype)
 
                 for process in args.process:
                     for c_value in CRANGE:
@@ -156,6 +175,12 @@ def submit_clustering_jobs(args):
                                 c_value,
                             )
                         )
+
+    if not jobinfo:
+        raise RuntimeError(
+            "No clustering jobs were prepared; expected simulations under "
+            f"{simulations_dir}/<assembly>/<seed>"
+        )
 
     print("\n> Writing job commands file...")
     with open(os.path.join("./", COMMANDS_FILE), "w") as handle:

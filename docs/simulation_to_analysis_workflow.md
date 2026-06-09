@@ -30,8 +30,14 @@ Use this for a quick check before submitting many jobs:
 ```bash
 uv run python -m geneclusterbench.simulate_full_pangenome \
   --gff /path/to/genome.gff \
-  --out /path/to/my_benchmark_data/simulations/34 \
+  --out /path/to/my_benchmark_data/simulations/genome/34 \
   --seed 34
+```
+
+The simulator writes outputs inside the selected assembly and seed folder. If the GFF is `/path/to/genome.gff`, the canonical local output folder is:
+
+```text
+/path/to/my_benchmark_data/simulations/genome/34
 ```
 
 The simulator writes outputs with a prefix such as:
@@ -61,6 +67,7 @@ uv run python -m geneclusterbench.submit_simulations \
   --gff /path/to/genome.gff \
   --simulator /path/to/geneclusterbench/src/geneclusterbench/simulate_full_pangenome.py \
   --python-env /path/to/environment/bin/activate \
+  --assembly-name genome \
   --pretend
 ```
 
@@ -72,14 +79,17 @@ The expected simulation layout is:
 my_benchmark_data/
 ├── random_numbers.txt
 └── simulations/
-    ├── 34/
-    ├── 1001/
-    └── 1002/
+    └── genome/
+        ├── 34/
+        ├── 1001/
+        └── 1002/
 ```
+
+By default, the assembly folder is derived from the GFF basename without extension. Use `--assembly-name` to set that folder name explicitly.
 
 ## 4. Submit Gene-Clustering Jobs
 
-The clustering launcher discovers simulation outputs, then submits CD-HIT and MMseqs2 jobs for nucleotide and amino-acid FASTAs.
+The clustering launcher discovers simulation outputs under `simulations/<assembly>/<seed>/`, then submits CD-HIT and MMseqs2 jobs for nucleotide and amino-acid FASTAs.
 
 ```bash
 uv run python -m geneclusterbench.submit_gene_clustering \

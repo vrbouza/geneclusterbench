@@ -36,6 +36,10 @@ def load_seeds(seedsfile):
     return seeds
 
 
+def get_assembly_name_from_gff(gff_path):
+    return Path(gff_path).stem
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Submit pangenome simulation jobs to Slurm."
@@ -48,6 +52,11 @@ def main():
     parser.add_argument("--time", dest="timemax", default="1-00:00:00")
     parser.add_argument("--mem", dest="memmax", default=6, type=int)
     parser.add_argument("--job-name", default="pangenomesims")
+    parser.add_argument(
+        "--assembly-name",
+        default=None,
+        help="Assembly folder name; defaults to the input GFF basename without extension",
+    )
     parser.add_argument("--pretend", action="store_true")
     args = parser.parse_args()
 
@@ -55,14 +64,15 @@ def main():
     randomnumbers = load_seeds(seedsfile)
     print(randomnumbers)
 
+    assembly_name = args.assembly_name or get_assembly_name_from_gff(args.gff)
     mainoutputfolder = os.path.join(args.outdir_sims, "simulations")
-    logdir = os.path.join(args.outdir_sims, "simulations", "logs")
+    logdir = os.path.join(args.outdir_sims, "logs", "simulations")
     if not args.pretend:
         os.makedirs(logdir, exist_ok=True)
     timestamp = time.time()
 
     for seed in randomnumbers:
-        tmpoutpath = os.path.join(mainoutputfolder, str(seed))
+        tmpoutpath = os.path.join(mainoutputfolder, assembly_name, str(seed))
         if not os.path.isdir(tmpoutpath) and not args.pretend:
             os.makedirs(tmpoutpath)
 
