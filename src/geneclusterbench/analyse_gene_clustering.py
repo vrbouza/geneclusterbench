@@ -132,6 +132,13 @@ def calculate_values_from_cluster_matrix(infotuple, indf, truthlab, truthdf):
     return outlist
 
 
+def parse_cdhit_identity(line):
+    identity = line.strip().split("at", 1)[1].strip().replace("%", "")
+    if "/" in identity:
+        identity = identity.split("/")[-1]
+    return float(identity) / 100.0
+
+
 def get_df_from_clusterer(clusterer, folderpath):
     if clusterer == "cdhit":
         listoflists = []
@@ -149,7 +156,7 @@ def get_df_from_clusterer(clusterer, folderpath):
                     tmpgeneid = line.strip().split(">")[1].split("...")[0]
                     setofgenes.add(tmpgeneid)
                     tmpdict[tmpclusterid][tmpgeneid] = (
-                        float(line.strip().split("at")[1].strip().replace("%", "")) / 100.0
+                        parse_cdhit_identity(line)
                     ) if "*" not in line else 2.0
 
         listofgenes = list(setofgenes)
