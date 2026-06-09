@@ -255,12 +255,7 @@ def get_info_from_folder(theargs):
     if os.path.isfile(speciesfile):
         nameofass = get_species_name(speciesfile)
     else:
-        warnings.warn(
-            f"Missing {speciesfile}; falling back to assembly ID {theass}",
-            RuntimeWarning,
-            stacklevel=2,
-        )
-        nameofass = str(theass)
+        nameofass = ""
 
     listoflists = []
     seed_result_dir = os.path.join(thedir, str(theass), str(theseed))
