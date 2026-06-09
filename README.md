@@ -35,6 +35,10 @@ source .venv/bin/activate
 python -m geneclusterbench.simulate_full_pangenome --help
 ```
 
+## Default seed file
+
+Batch scripts read seeds from `data/random_numbers.txt` by default. Pass `--seeds` to use a different seed file.
+
 ## External Tools
 
 The Python environment includes the simulation and analysis dependencies, but the clustering benchmark still expects external command-line tools and cluster infrastructure:

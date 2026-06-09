@@ -9,9 +9,10 @@ DEFAULT_OUTDIRSIMS = (
     "2025_09_22_simsnowwithntandaasandgffs"
 )
 PACKAGE_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = PACKAGE_DIR.parents[2]
+PROJECT_ROOT = PACKAGE_DIR.parents[1]
 DEFAULT_EXEC_PATH = str(PACKAGE_DIR / "simulate_full_pangenome.py")
 DEFAULT_PY3ENV = str(PROJECT_ROOT / ".venv" / "bin" / "activate")
+DEFAULT_SEEDS = str(PROJECT_ROOT / "data" / "random_numbers.txt")
 
 DEFAULT_GFF = (
     "/nfs/research/jlees/vrbouza/projects/clustering_benchmarking/tests/"
@@ -45,7 +46,7 @@ def main():
         description="Submit pangenome simulation jobs to Slurm."
     )
     parser.add_argument("--outdir-sims", default=DEFAULT_OUTDIRSIMS)
-    parser.add_argument("--seeds", default=None, help="Seed file; defaults to OUTDIR/random_numbers.txt")
+    parser.add_argument("--seeds", default=DEFAULT_SEEDS)
     parser.add_argument("--simulator", default=DEFAULT_EXEC_PATH)
     parser.add_argument("--python-env", default=DEFAULT_PY3ENV)
     parser.add_argument("--gff", default=DEFAULT_GFF)
@@ -60,7 +61,7 @@ def main():
     parser.add_argument("--pretend", action="store_true")
     args = parser.parse_args()
 
-    seedsfile = args.seeds or os.path.join(args.outdir_sims, "random_numbers.txt")
+    seedsfile = args.seeds
     randomnumbers = load_seeds(seedsfile)
     print(randomnumbers)
 

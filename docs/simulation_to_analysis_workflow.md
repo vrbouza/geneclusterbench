@@ -8,14 +8,13 @@ If this repository was cloned or copied to a new environment, adjust the local h
 
 You need one GFF3 file with embedded FASTA. The simulator expects a `##FASTA` section in the GFF3 file and uses CDS features as the source genes.
 
-Create a project data directory with a seed file:
+The default seed file is provided in the uv project folder:
 
 ```text
-my_benchmark_data/
-└── random_numbers.txt
+geneclusterbench/data/random_numbers.txt
 ```
 
-Example `random_numbers.txt`:
+Use `--seeds` only if you want to override it. Example seed file content:
 
 ```text
 34
@@ -63,7 +62,6 @@ The simulation launcher reads the seed file and submits one Slurm job per seed:
 ```bash
 uv run python -m geneclusterbench.submit_simulations \
   --outdir-sims /path/to/my_benchmark_data \
-  --seeds /path/to/my_benchmark_data/random_numbers.txt \
   --gff /path/to/genome.gff \
   --simulator /path/to/geneclusterbench/src/geneclusterbench/simulate_full_pangenome.py \
   --python-env /path/to/environment/bin/activate \
@@ -77,7 +75,6 @@ The expected simulation layout is:
 
 ```text
 my_benchmark_data/
-├── random_numbers.txt
 └── simulations/
     └── genome/
         ├── 34/
@@ -85,7 +82,7 @@ my_benchmark_data/
         └── 1002/
 ```
 
-By default, the assembly folder is derived from the GFF basename without extension. Use `--assembly-name` to set that folder name explicitly.
+By default, seeds are read from `geneclusterbench/data/random_numbers.txt`, and the assembly folder is derived from the GFF basename without extension. Use `--seeds` to set a different seed file, and `--assembly-name` to set the assembly folder name explicitly.
 
 ## 4. Submit Gene-Clustering Jobs
 
@@ -94,7 +91,6 @@ The clustering launcher discovers simulation outputs under `simulations/<assembl
 ```bash
 uv run python -m geneclusterbench.submit_gene_clustering \
   --datapath /path/to/my_benchmark_data \
-  --seeds /path/to/my_benchmark_data/random_numbers.txt \
   --outdir /path/to/final_outputs \
   --temp-outdir /path/to/scratch \
   --softwaredir /hps/software/users/jlees/vrbouza/projects/clustering_benchmark/software \
@@ -128,7 +124,6 @@ After clustering jobs finish, run:
 uv run python -m geneclusterbench.analyse_gene_clustering \
   /path/to/clustering_benchmark_TIMESTAMP \
   --datapath /path/to/my_benchmark_data \
-  --seeds /path/to/my_benchmark_data/random_numbers.txt \
   --out-folder /path/to/analysis_plots \
   --nthreads 4
 ```

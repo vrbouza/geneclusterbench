@@ -1,6 +1,7 @@
 import argparse
 import os
 import warnings
+from pathlib import Path
 from datetime import datetime
 from multiprocessing import Pool
 
@@ -29,6 +30,9 @@ DEFAULT_FONT_BOLD = (
     "/nfs/research/jlees/vrbouza/data/ibm-plex-sans/fonts/complete/ttf/"
     "IBMPlexSans-Bold.ttf"
 )
+PACKAGE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = PACKAGE_DIR.parents[1]
+DEFAULT_SEEDS = str(PROJECT_ROOT / "data" / "random_numbers.txt")
 
 CLUSTERERS = ["cdhit", "mmseqs2"]
 SEQTYPES = ["nt", "aa"]
@@ -486,7 +490,7 @@ def main():
     parser.add_argument("--out-folder", dest="outfolder", default="./temp_runanalysis")
     parser.add_argument("--nthreads", "-j", type=int, default=1)
     parser.add_argument("--datapath", default=DEFAULT_DATAPATH)
-    parser.add_argument("--seeds", default=None)
+    parser.add_argument("--seeds", default=DEFAULT_SEEDS)
     parser.add_argument("--font-regular", default=DEFAULT_FONT_REGULAR)
     parser.add_argument("--font-italic", default=DEFAULT_FONT_ITALIC)
     parser.add_argument("--font-bold", default=DEFAULT_FONT_BOLD)
@@ -494,7 +498,7 @@ def main():
 
     plt.rcParams.update({"figure.max_open_warning": 0})
     font_props = get_font_properties(args)
-    seedsfile = args.seeds or os.path.join(args.datapath, "random_numbers.txt")
+    seedsfile = args.seeds
 
     lsdirs = next(os.walk(args.runfolder))[1]
     if "simulations" not in lsdirs:

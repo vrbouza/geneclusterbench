@@ -1,6 +1,7 @@
 import argparse
 import os
 import time
+from pathlib import Path
 
 
 DEFAULT_DATAPATH = (
@@ -14,6 +15,9 @@ DEFAULT_RUNNER = (
     "/hps/software/users/jlees/vrbouza/projects/assembler_development/"
     "benchmarking/run_benchmark.py"
 )
+PACKAGE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = PACKAGE_DIR.parents[1]
+DEFAULT_SEEDS = str(PROJECT_ROOT / "data" / "random_numbers.txt")
 
 MMSEQS2_SCAFFOLD = (
     "mkdir -p {workdir} && mkdir -p {tmpdir} && cd {workdir} && "
@@ -238,14 +242,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--datapath", default=DEFAULT_DATAPATH)
-    parser.add_argument(
-        "--seeds",
-        "-s",
-        default=(
-            "/nfs/research/jlees/vrbouza/data/clustering_benchmarking/"
-            "2025_09_04_morepangenomesims/random_numbers.txt"
-        ),
-    )
+    parser.add_argument("--seeds", "-s", default=DEFAULT_SEEDS)
     parser.add_argument("--outdir", "-o", default="./")
     parser.add_argument("--temp-outdir", "-to", default="/hps/nobackup/jlees/vrbouza/tmp/")
     parser.add_argument("--threads", "-j", default=4, type=int)
