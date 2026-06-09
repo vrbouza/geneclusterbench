@@ -124,11 +124,11 @@ def calculate_values_from_cluster_matrix(infotuple, indf, truthlab, truthdf):
         infotuple[0],
         infotuple[1],
         infotuple[2],
-        metrics.adjusted_rand_score(truthlab, probelab),
+        float(metrics.adjusted_rand_score(truthlab, probelab)),
         get_purity(probelab, truthdf),
-        adjusted_mutual_info_score(truthlab, probelab).item(),
+        float(adjusted_mutual_info_score(truthlab, probelab)),
     ]
-    outlist += [el.item() for el in metrics.homogeneity_completeness_v_measure(truthlab, probelab)]
+    outlist += [float(el) for el in metrics.homogeneity_completeness_v_measure(truthlab, probelab)]
     return outlist
 
 
